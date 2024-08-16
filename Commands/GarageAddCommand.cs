@@ -145,15 +145,20 @@ namespace RFGarage.Commands
                 foreach (var itemJar in vehicle.trunkItems.items)
                 {
                     var asset = AssetUtil.GetItemAsset(itemJar.item.id);
-
+                    Console.WriteLine(itemJar.item.id);
                     foreach (var blacklist in RFGarage.Plugin.Conf.Blacklists.Where(x => x.Type == EBlacklistType.ITEM && x.IdList.Contains(itemJar.item.id)))
                     {
+                        Console.WriteLine(itemJar.item.id);
                         if (!player.HasPermission(blacklist.BypassPermission))
                         {
+                            Console.WriteLine(itemJar.item.id);
                             await context.ReplyAsync(VehicleUtil.TranslateRich(EResponse.BLACKLIST_ITEM.ToString(),
                                 asset.itemName, asset.id), RFGarage.Plugin.MsgColor, RFGarage.Plugin.Conf.MessageIconUrl);
 
-                            ItemManager.dropItem(itemJar.item, vehicle.transform.position, true, false, false);
+                            await ThreadTool.RunOnGameThreadAsync(() =>
+                            {
+                                ItemManager.dropItem(itemJar.item, vehicle.transform.position, true, false, false);
+                            });
                             break;
                         }
                     }
@@ -161,7 +166,7 @@ namespace RFGarage.Commands
             }
 
 
-
+            vehicle.trunkItems?.clear();
             await ThreadTool.RunOnGameThreadAsync(() => { vehicle.forceRemoveAllPlayers(); });
             RFGarage.Plugin.Inst.IsProcessingGarage[player.CSteamID.m_SteamID] = DateTime.Now;
             RFGarage.Plugin.Inst.BusyVehicle.Add(vehicle.instanceID);
