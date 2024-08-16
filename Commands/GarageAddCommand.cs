@@ -142,21 +142,25 @@ namespace RFGarage.Commands
 
             if (vehicle.trunkItems != null && vehicle.trunkItems.getItemCount() != 0)
             {
-                foreach (var blacklist in RFGarage.Plugin.Conf.Blacklists.Where(x => x.Type == EBlacklistType.ITEM))
+                foreach (var itemJar in vehicle.trunkItems.items)
                 {
-                    if (player.HasPermission(blacklist.BypassPermission))
-                        continue;
+                    var asset = AssetUtil.GetItemAsset(itemJar.item.id);
 
-                    foreach (var asset in from itemJar in vehicle.trunkItems.items
-                             where blacklist.IdList.Contains(itemJar.item.id)
-                             select AssetUtil.GetItemAsset(itemJar.item.id))
+                    foreach (var blacklist in RFGarage.Plugin.Conf.Blacklists.Where(x => x.Type == EBlacklistType.ITEM && x.IdList.Contains(itemJar.item.id)))
                     {
-                        await context.ReplyAsync(VehicleUtil.TranslateRich(EResponse.BLACKLIST_ITEM.ToString(),
-                            asset.itemName, asset.id), RFGarage.Plugin.MsgColor, RFGarage.Plugin.Conf.MessageIconUrl);
-                        return;
+                        if (!player.HasPermission(blacklist.BypassPermission))
+                        {
+                            await context.ReplyAsync(VehicleUtil.TranslateRich(EResponse.BLACKLIST_ITEM.ToString(),
+                                asset.itemName, asset.id), RFGarage.Plugin.MsgColor, RFGarage.Plugin.Conf.MessageIconUrl);
+
+                            ItemManager.dropItem(itemJar.item, vehicle.transform.position, true, false, false);
+                            break;
+                        }
                     }
                 }
             }
+
+
 
             await ThreadTool.RunOnGameThreadAsync(() => { vehicle.forceRemoveAllPlayers(); });
             RFGarage.Plugin.Inst.IsProcessingGarage[player.CSteamID.m_SteamID] = DateTime.Now;

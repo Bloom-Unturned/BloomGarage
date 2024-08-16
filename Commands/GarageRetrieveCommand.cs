@@ -7,6 +7,7 @@ using Rocket.Unturned.Player;
 using RocketExtensions.Models;
 using RocketExtensions.Plugins;
 using RocketExtensions.Utilities;
+using SDG.Unturned;
 using UnityEngine;
 using VehicleUtil = RFGarage.Utils.VehicleUtil;
 
@@ -61,7 +62,7 @@ namespace RFGarage.Commands
             point += Vector3.up * 12f;
             await ThreadTool.RunOnGameThreadAsync(() =>
             {
-                playerGarage.GarageContent.Position = point;
+                playerGarage.GarageContent.Position = GetVehiclePosition(player.Player);
                 playerGarage.GarageContent.Rotation = QuartenionWrapper.Create(pTransform.rotation);
                 playerGarage.GarageContent.SpawnVehicle();
             });
@@ -69,6 +70,18 @@ namespace RFGarage.Commands
                 VehicleUtil.TranslateRich(EResponse.GARAGE_RETRIEVE.ToString(),
                     playerGarage.GarageContent.GetVehicleAsset().vehicleName),
                 RFGarage.Plugin.MsgColor, RFGarage.Plugin.Conf.MessageIconUrl);
+        }
+        private Vector3 GetVehiclePosition(Player player)
+        {
+            Vector3 vector = player.transform.position + player.transform.forward * 6f;
+            RaycastHit raycastHit;
+            Physics.Raycast(vector + Vector3.up * 16f, Vector3.down,out raycastHit, 32f, RayMasks.BLOCK_VEHICLE);
+            bool flag = raycastHit.collider != null;
+            if (flag)
+            {
+                vector.y = raycastHit.point.y + 16f;
+            }
+            return vector;
         }
     }
 }
