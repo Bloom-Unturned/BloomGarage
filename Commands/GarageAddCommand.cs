@@ -142,22 +142,27 @@ namespace RFGarage.Commands
 
             if (vehicle.trunkItems != null && vehicle.trunkItems.getItemCount() != 0)
             {
-                foreach (var itemJar in vehicle.trunkItems.items)
+                for (int i = vehicle.trunkItems.getItemCount() - 1; i >= 0; i--)
                 {
+                    var itemJar = vehicle.trunkItems.items[i];
                     var asset = AssetUtil.GetItemAsset(itemJar.item.id);
                     Console.WriteLine(itemJar.item.id);
-                    foreach (var blacklist in RFGarage.Plugin.Conf.Blacklists.Where(x => x.Type == EBlacklistType.ITEM && x.IdList.Contains(itemJar.item.id)))
+
+                    foreach (var blacklist in RFGarage.Plugin.Conf.Blacklists
+                        .Where(x => x.Type == EBlacklistType.ITEM && x.IdList.Contains(itemJar.item.id)))
                     {
                         Console.WriteLine(itemJar.item.id);
+
                         if (!player.HasPermission(blacklist.BypassPermission))
                         {
-                            Console.WriteLine(itemJar.item.id);
+                            Console.WriteLine(itemJar.item.id.ToString(), " is blacklisted");
                             await context.ReplyAsync(VehicleUtil.TranslateRich(EResponse.BLACKLIST_ITEM.ToString(),
                                 asset.itemName, asset.id), RFGarage.Plugin.MsgColor, RFGarage.Plugin.Conf.MessageIconUrl);
 
                             await ThreadTool.RunOnGameThreadAsync(() =>
                             {
-                                ItemManager.dropItem(itemJar.item, vehicle.transform.position, true, false, false);
+                                    ItemManager.dropItem(itemJar.item, vehicle.transform.position, true, false, false);
+                                    vehicle.trunkItems.removeItem((byte)i);
                             });
                             break;
                         }
@@ -165,8 +170,6 @@ namespace RFGarage.Commands
                 }
             }
 
-
-            vehicle.trunkItems?.clear();
             await ThreadTool.RunOnGameThreadAsync(() => { vehicle.forceRemoveAllPlayers(); });
             RFGarage.Plugin.Inst.IsProcessingGarage[player.CSteamID.m_SteamID] = DateTime.Now;
             RFGarage.Plugin.Inst.BusyVehicle.Add(vehicle.instanceID);
